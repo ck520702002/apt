@@ -162,16 +162,22 @@ for enemyOffer in enemyOffers:
 
 normalCombinations=[]
 normalOffers = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList and personalOffer[0]['name'] not in mortalNameList ]
+
 #normalCombinations = map(list,itertools.product( *normalOffers))
 
 numberOfCombinations =  1
 for personalOffer in normalOffers:
 	numberOfCombinations = numberOfCombinations*len(personalOffer)
 print 'numberOfCombinations = ' + str(numberOfCombinations)
-pool = Pool(100)
-for result in pool.imap(list, itertools.product(*normalOffers)):
-    normalCombinations.append(result)
-    print str(len(normalCombinations))+'/'+str(numberOfCombinations)
+
+for i in itertools.product( *normalOffers):
+	normalCombinations.append(list(i))
+	print str(len(normalCombinations))+'/'+str(numberOfCombinations)
+
+#pool = Pool(1)
+#for result in pool.imap(list, itertools.product(*normalOffers)):
+#    normalCombinations.append(result)
+#    print str(len(normalCombinations))+'/'+str(numberOfCombinations)
 
 
 #generates the possible combinations of the possible combinations for the married people and the normal people
