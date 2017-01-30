@@ -5,7 +5,7 @@ import operator
 from multiprocessing import Pool
 #file opening
 #filename = raw_input("Enter the inputfile name: ")
-f = open('inputfile3.txt')
+f = open('inputfile2.txt')
 
 #data cleaning
 a = [x for x in f.readlines() if x != '\r\n']
@@ -95,28 +95,11 @@ def relationshipBonus (name1, name2):
 		if (name1 == relationship['p1'] and name2 == relationship['p2']) or (name2 == relationship['p1'] and name1 == relationship['p2']):
 			if relationship['relationship'] == 'Dating':
 				return 50
-			if relationship['relationship'] == 'Mortal Enemies':
-				return -1000
-			if relationship['relationship'] == 'Friends':
+			elif relationship['relationship'] == 'Friends':
 				return 20
-			if relationship['relationship'] == 'Married':  
-				return 1000
 	return 0
-#this is a function that returns the possible locations for 2 married people since they must be together
-def possibleLocations (name1, name2):
-	temp1 = []
-	temp2 = []
-	for offer in offers:
-		if offer['name'] == name1:
-			if offer['location'] not in []:
-				temp1.append(offer['location'])
-		elif offer['name'] == name2:
-			if offer['location'] not in []:
-				temp2.append(offer['location'])
-	return list(set(temp2).intersection(temp1))
- 
 
-#caculate the utility for each offer in the offers list
+#caculate the utility for each offer in the offers list without considering the geography
 for person in people:
 	for personality in personalities:
 		if personality['type'] == person['type']:
@@ -133,38 +116,11 @@ for person in people:
 	personalOffers.append([offer for offer in offers if offer['name'] == person['name']])
 
 
-#--------
-#eliminates the useless offers from each personalOffer since the married ones must be in the same city
-#newPersonalOffers=[]
-#marriedNameList = []
-#for relationship in relationships:
-#	if relationship['relationship'] == 'Married':
-#		marriedNameList.append(relationship['p1'])
-#		marriedNameList.append(relationship['p2'])
-#		locations = possibleLocations(relationship['p1'],relationship['p2'])
-#		for personalOffer in personalOffers:
-#			if personalOffer[0]['name'] == relationship['p1'] or personalOffer[0]['name'] == relationship['p2']:
-#				newPersonalOffers.append([offer for offer in personalOffer if offer['location'] in locations ])
-#
-#create a list containing the names of the modified personalOffers
-#marriedNameList = [ newPersonalOffer[0]['name'] for newPersonalOffer in newPersonalOffers ]
-#
-#create a temp list to update the list of personalOffers
-#temp  = [ personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList ]
-#for newPersonalOffer in newPersonalOffers:
-#	temp.append(newPersonalOffer)
-
-#update personalOffers
-#personalOffers = temp
-#------------
-
-#x=0
-#for i in personalOffers:
-#	x = x+len(i)
-#print 'reduced ' + str(len(offers)-x) +' offers by the contraint that the married people should be in the same city'
-
-enemyOffers = []
-marriedOffers =[]
+#initialize the name lists:
+#for marriedNameList, it contains the names that are married
+#for mortalNameList, it contains the names that are mortal enemies but not in the marriedNameList
+#i do so since the people in the marriedNameList have to be at the same location, 
+#which would reduce the number of combinations that needs to be considered
 marriedNameList =[]
 mortalNameList = []
 for relationship in relationships:
@@ -176,6 +132,8 @@ for relationship in relationships:
 			mortalNameList.append(relationship['p1'])
 			mortalNameList.append(relationship['p2'])
 
+enemyOffers = []
+marriedOffers =[]
 for relationship in relationships:
 	if relationship['relationship'] == 'Married':
 		marriedOffer = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] == relationship['p1']  or personalOffer[0]['name'] == relationship['p2']]
@@ -186,6 +144,8 @@ for relationship in relationships:
 			enemyOffer = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] == relationship['p1']  or personalOffer[0]['name'] == relationship['p2']]
 			enemyOffers.append(enemyOffer)
 
+#for every married couple, generates all the combinations and then delete the ones that they are not in the same city
+#put the possible combinations into lists
 possibleMarriedCombinationSet =[]
 for marriedOffer in marriedOffers:
 	marriedCombinations = map(list,itertools.product( *marriedOffer))
@@ -198,26 +158,49 @@ for enemyOffer in enemyOffers:
 	possibleCombinations =[combination for combination in enemyCombinations if combination[0]['location'] != combination[1]['location']]
 	possibleEnemyCombinationSet.append(possibleCombinations)
 
-normalOffers = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList and personalOffer[0]['name'] not in mortalNameList ]
-normalCombinations = map(list,itertools.product( *normalOffers))
+#generates the possible combinations for people who are not married and people whose mortal enemy is a married person
 
+normalCombinations=[]
+normalOffers = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList and personalOffer[0]['name'] not in mortalNameList ]
+
+pool = Pool(500)
+for result in pool.imap(list, itertools.product(*normalOffers	)):
+    normalCombinations.append(result)
+    print len(normalCombinations)
+
+#normalCombinations = map(list,itertools.product( *normalOffers))
+
+#generates the possible combinations of the possible combinations for the married people and the normal people
+#put the result into resultCombinations
 resultCombinations = normalCombinations
 for possibleMarriedCombination in possibleMarriedCombinationSet:
 	templist= [possibleMarriedCombination, resultCombinations]
 	resultCombinations = map(list,itertools.product( *templist))
 
+#generates the possible combinations of the possible combinations for the mortal enemies and the resultCombinations
 for possibleEnemyCombination in possibleEnemyCombinationSet:
 	templist= [possibleEnemyCombination, resultCombinations]
 	resultCombinations = map(list,itertools.product( *templist))
 
-finalCombinations = []
+#normalize the list combinations into: [ [offer1,offer2..] , [offer3,offer4.] .. ]
+combinations = []
 for resultCombination in resultCombinations:
 	combination =[]
 	for offerSet in resultCombination:
 		for offer in offerSet:
 			combination.append(offer)
-	finalCombinations.append(combination)
+	combinations.append(combination)
 
+#check if there are people that are mortal enemies to the married people
+#eliminates the impossible combinations
+finalCombinations=[]
+for combination in combinations:
+	for offer in combination:
+		for otherOffer in combination:
+			for relationship in relationships:
+				if relationship['relationship'] == 'Mortal Enemies' and relationship['p1'] ==offer['name'] and relationship['p2'] == otherOffer['name']:
+					if offer['location']!=otherOffer['location']:
+						finalCombinations.append(combination)
 
 
 
@@ -259,4 +242,4 @@ print ("the optimal assignments are:")
 for offer in optimal['assignments']:
 	print (offer['name'] + ' --> ' + offer['company'])
 
-pdb.set_trace()
+
