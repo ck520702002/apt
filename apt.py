@@ -163,10 +163,10 @@ for enemyOffer in enemyOffers:
 normalCombinations=[]
 normalOffers = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList and personalOffer[0]['name'] not in mortalNameList ]
 
-pool = Pool(1500)
-for result in pool.imap(list, itertools.product(*normalOffers	)):
+pool = Pool(1000)
+for result in pool.imap(list, itertools.product(*normalOffers)):
     normalCombinations.append(result)
-    print len(normalCombinations)
+
 
 #normalCombinations = map(list,itertools.product( *normalOffers))
 
@@ -237,9 +237,11 @@ for combination in finalCombinations:
 #sort the results list by the total utility
 results.sort(key=operator.itemgetter('totalUtility'))
 optimal = results.pop()
+f = open("result.txt", "w")
 
 print ("the optimal assignments are:")
 for offer in optimal['assignments']:
 	print (offer['name'] + ' --> ' + offer['company'])
-
+	f.write((offer['name'] + ' --> ' + offer['company'] +'\n'))
+f.close()
 
