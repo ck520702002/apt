@@ -163,7 +163,7 @@ for enemyOffer in enemyOffers:
 normalCombinations=[]
 normalOffers = [personalOffer for personalOffer in personalOffers if personalOffer[0]['name'] not in marriedNameList and personalOffer[0]['name'] not in mortalNameList ]
 
-pool = Pool(500)
+pool = Pool(1500)
 for result in pool.imap(list, itertools.product(*normalOffers	)):
     normalCombinations.append(result)
     print len(normalCombinations)
