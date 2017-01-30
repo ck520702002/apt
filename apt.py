@@ -170,9 +170,11 @@ for personalOffer in normalOffers:
 	numberOfCombinations = numberOfCombinations*len(personalOffer)
 print 'numberOfCombinations = ' + str(numberOfCombinations)
 
+x=0
 for i in itertools.product( *normalOffers):
 	normalCombinations.append(list(i))
-	print str(len(normalCombinations))+'/'+str(numberOfCombinations)
+	x=x+1
+	print x
 
 #pool = Pool(1)
 #for result in pool.imap(list, itertools.product(*normalOffers)):
